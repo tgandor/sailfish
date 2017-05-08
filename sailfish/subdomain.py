@@ -8,14 +8,22 @@ from collections import defaultdict, namedtuple
 import ctypes
 import inspect
 import operator
+import sys
+import six
 import multiprocessing as mp
 import numpy as np
 from scipy.ndimage import filters
+from functools import reduce
 
 from sailfish import util
 from sailfish import sym
 import sailfish.node_type as nt
 from sailfish.subdomain_connection import LBConnection
+
+# prevent OverflowError on Windows
+if sys.version_info[0] > 2 and sys.platform == 'win32':
+    _hash = hash
+    hash = lambda x: _hash(x) % 2**31
 
 ConnectionPair = namedtuple('ConnectionPair', 'src dst')
 
@@ -109,7 +117,7 @@ class SubdomainSpec(object):
     def update_context(self, ctx):
         ctx['dim'] = self.dim
         # The flux tensor is a symmetric matrix.
-        ctx['flux_components'] = self.dim * (self.dim + 1) / 2
+        ctx['flux_components'] = self.dim * (self.dim + 1) // 2
         ctx['envelope_size'] = self.envelope_size
         # TODO(michalj): Fix this.
         # This requires support for ghost nodes in the periodicity code
@@ -162,7 +170,7 @@ class SubdomainSpec(object):
         """Returns a list of pairs: (face, subdomain ID) representing connections
         to different subdomains."""
         ids = set([])
-        for face, v in self._connections.iteritems():
+        for face, v in six.iteritems(self._connections):
             for pair in v:
                 ids.add((face, pair.dst.block_id))
         return list(ids)
@@ -215,7 +223,7 @@ class SubdomainSpec(object):
             self.Y_HIGH: self.Y_LOW,
             self.Z_HIGH: self.Z_LOW
         }
-        opp_map.update(dict((v, k) for k, v in opp_map.iteritems()))
+        opp_map.update(dict((v, k) for k, v in six.iteritems(opp_map)))
         return opp_map[face]
 
     @classmethod
@@ -492,7 +500,7 @@ class Subdomain(object):
     def _verify_params(self, where, node_type):
         """Verifies that the node parameters are set correctly."""
 
-        for name, param in node_type.params.iteritems():
+        for name, param in six.iteritems(node_type.params):
             # Single number.
             if util.is_number(param):
                 continue

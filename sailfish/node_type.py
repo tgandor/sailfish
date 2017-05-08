@@ -10,6 +10,7 @@ from collections import namedtuple
 import numpy as np
 from sympy import Symbol
 from sympy.core import expr
+import six
 
 ScratchSize = namedtuple('ScratchSize', ('dim2', 'dim3'))
 
@@ -386,16 +387,16 @@ def __init_node_type_list():
     return dict([(node_type.id, node_type) for node_type in ret])
 
 def get_wet_node_type_ids():
-    return [id for id, nt in _NODE_TYPES.iteritems() if nt.wet_node]
+    return [id for id, nt in six.iteritems(_NODE_TYPES) if nt.wet_node]
 
 def get_dry_node_type_ids():
-    return [id for id, nt in _NODE_TYPES.iteritems() if not nt.wet_node]
+    return [id for id, nt in six.iteritems(_NODE_TYPES) if not nt.wet_node]
 
 def get_orientation_node_type_ids():
-    return [id for id, nt in _NODE_TYPES.iteritems() if nt.needs_orientation]
+    return [id for id, nt in six.iteritems(_NODE_TYPES) if nt.needs_orientation]
 
 def get_link_tag_node_type_ids():
-    return [id for id, nt in _NODE_TYPES.iteritems() if nt.link_tags]
+    return [id for id, nt in six.iteritems(_NODE_TYPES) if nt.link_tags]
 
 def multifield(values, where=None):
     """Collapses a list of numpy arrays into a structured field that can be

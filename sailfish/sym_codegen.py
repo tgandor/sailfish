@@ -1,6 +1,7 @@
 from operator import itemgetter
 import operator
 import re
+import six
 try:
     from sympy.core import singleton
     NegativeOne = singleton.S.NegativeOne
@@ -242,7 +243,7 @@ def cexpr(sim, incompressible, pointers, ex, rho, aliases=True, vectors=True,
         t = t.subs(S.rho0, rho)
 
     if aliases:
-        for src, dst in S.aliases.iteritems():
+        for src, dst in six.iteritems(S.aliases):
             t = t.subs(src, dst)
 
     t = KernelCodePrinter().doprint(t)

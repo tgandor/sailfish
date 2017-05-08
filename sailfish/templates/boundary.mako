@@ -1,6 +1,7 @@
 <%!
     from sailfish import sym, sym_equilibrium
     import sailfish.node_type as nt
+    import six
 %>
 
 <%namespace file="mako_utils.mako" import="*"/>
@@ -68,7 +69,7 @@ ${device_func} inline float get_time_from_iteration(unsigned int iteration) {
 %endif  ## time_dependence
 
 ## Renders functions to compute dynamic values.
-%for i, expressions in symbol_idx_map.iteritems():
+%for i, expressions in six.iteritems(symbol_idx_map):
   ${device_func} inline void time_dep_param_${i}(float *out ${dynamic_val_args_decl()}) {
     %if time_dependence:
       float phys_time = get_time_from_iteration(iteration_number);
@@ -85,7 +86,7 @@ ${device_func} inline void node_param_get_vector(const int idx, float *out
   %if (time_dependence or space_dependence) and symbol_idx_map:
     if (idx >= ${non_symbolic_idxs}) {
       switch (idx) {
-        %for key, val in symbol_idx_map.iteritems():
+        %for key, val in six.iteritems(symbol_idx_map):
           %if len(val) == dim:
             case ${key}:
               time_dep_param_${key}(out ${dynamic_val_args()});
@@ -112,7 +113,7 @@ ${device_func} inline float node_param_get_scalar(const int idx ${dynamic_val_ar
   %if (time_dependence or space_dependence) and symbol_idx_map:
     if (idx >= ${non_symbolic_idxs}) {
       switch (idx) {
-        %for key, val in symbol_idx_map.iteritems():
+        %for key, val in six.iteritems(symbol_idx_map):
           %if len(val) == 1:
             case ${key}: {
               float out;

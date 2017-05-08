@@ -3,6 +3,7 @@
 from collections import namedtuple
 from sailfish import sym, util
 from sailfish import node_type as nt
+import six
 
 import numpy as np
 
@@ -187,7 +188,7 @@ class LBSim(object):
 
     def verify_fields(self):
         """Verifies that fields have not accidentally been overridden."""
-        for name, field_pair in self._fields.iteritems():
+        for name, field_pair in six.iteritems(self._fields):
             assert getattr(self, name) is field_pair.buffer,\
                     'Field {0} redefined (probably in initial_conditions())'.format(
                             name)

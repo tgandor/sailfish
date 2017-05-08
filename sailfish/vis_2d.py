@@ -352,10 +352,10 @@ class Fluid2DVis(vis.FluidVis):
 
                     fname = '%s_%05d.png' % (self.sim.filename, i)
                     if os.path.exists(fname):
-                        print 'Could not create screenshot.'
+                        print('Could not create screenshot.')
 
                     pygame.image.save(self._screen, fname)
-                    print 'Saved %s.' % fname
+                    print('Saved %s.' % fname)
                 elif event.key == pygame.K_i:
                     self._show_info = not self._show_info
 

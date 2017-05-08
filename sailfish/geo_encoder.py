@@ -8,6 +8,8 @@ import numpy as np
 
 from sailfish import util
 import sailfish.node_type as nt
+import six
+
 
 def bit_len(num):
     """Returns the minimal number of bits necesary to encode `num`."""
@@ -100,8 +102,8 @@ class GeoEncoderConst(GeoEncoder):
 
         # Refer to subdomain.Subdomain._verify_params for a list of allowed
         # ways of encoding nodes.
-        for node_key, node_type in param_dict.iteritems():
-            for param in node_type.params.itervalues():
+        for node_key, node_type in six.iteritems(param_dict):
+            for param in six.itervalues(node_type.params):
                 if util.is_number(param):
                     if param in seen_params:
                         idx = param_to_idx[param]
@@ -160,8 +162,8 @@ class GeoEncoderConst(GeoEncoder):
         # that of the boundary condition (vector vs scalar, etc).
         # Second pass: only process symbolic expressions here.
 
-        for node_key, node_type in param_dict.iteritems():
-            for param in node_type.params.itervalues():
+        for node_key, node_type in six.iteritems(param_dict):
+            for param in six.itervalues(node_type.params):
                 if isinstance(param, nt.DynamicValue):
                     if param in seen_params:
                         idx = param_to_idx[value]
@@ -211,7 +213,7 @@ class GeoEncoderConst(GeoEncoder):
             self.scratch_space_size += num_nodes * node_type.scratch_space_size(self.dim)
 
         if type_to_node_count:
-            self._bits_scratch = bit_len(max(type_to_node_count.itervalues()))
+            self._bits_scratch = bit_len(max(six.itervalues(type_to_node_count)))
         else:
             self._bits_scratch = 0
 
@@ -244,11 +246,11 @@ class GeoEncoderConst(GeoEncoder):
         # Remap type IDs.
         max_type_code = max(self._type_id_remap.keys())
         self._type_choice_map = np.zeros(max_type_code + 1, dtype=np.uint32)
-        for orig_code, new_code in self._type_id_remap.iteritems():
+        for orig_code, new_code in six.iteritems(self._type_id_remap):
             self._type_choice_map[orig_code] = new_code
 
         self.config.logger.debug('... type map is %s' % self._type_id_remap)
-        for k in self._type_id_remap.iterkeys():
+        for k in six.iterkeys(self._type_id_remap):
             self.config.logger.debug('... ID %d: %s' % (k,
                                                         nt._NODE_TYPES[k].__name__))
 

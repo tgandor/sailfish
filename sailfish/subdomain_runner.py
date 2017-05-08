@@ -5,13 +5,13 @@ __email__ = 'sailfish-cfd@googlegroups.com'
 __license__ = 'LGPL3'
 
 from collections import defaultdict, namedtuple
-import cPickle as pickle
 import math
 import operator
 import os
 import platform
 import signal
 import time
+from functools import reduce
 import numpy as np
 import zmq
 from sailfish import codegen, io
@@ -19,6 +19,11 @@ from sailfish.lb_base import LBMixIn, LBSim
 from sailfish.profile import profile, TimeProfile
 from sailfish.subdomain_connection import ConnectionBuffer, MacroConnectionBuffer
 import sailfish.node_type as nt
+import six
+try:
+    import cPickle as pickle
+except ImportError:
+    import _pickle as pickle
 
 # Used to hold a reference to a CUDA kernel and a grid on which it is
 # to be executed.
@@ -147,7 +152,7 @@ class SubdomainRunner(object):
         # communicated to the master.
         unready = []
         ports = {}
-        for b_id, connector in self._spec._connectors.iteritems():
+        for b_id, connector in six.iteritems(self._spec._connectors):
             if connector.is_ready():
                 connector.init_runner(self._ctx)
                 if connector.port is not None:
@@ -786,7 +791,7 @@ class SubdomainRunner(object):
         # separate dictionary where the order of the connection buffers
         # corresponds to that used by the _other_ subdomain.
         self._recv_block_to_connbuf = defaultdict(list)
-        for subdomain_id, cbufs in self._block_to_connbuf.iteritems():
+        for subdomain_id, cbufs in six.iteritems(self._block_to_connbuf):
             cbufs.sort(key=lambda x: (x.face, x.grid_id))
             recv_bufs = list(cbufs)
             recv_bufs.sort(key=lambda x: (self._spec.opposite_face(x.face),
@@ -1054,14 +1059,14 @@ class SubdomainRunner(object):
         else:
             buf = 'coll_buf'
 
-        for b_id, connector in self._spec._connectors.iteritems():
+        for b_id, connector in six.iteritems(self._spec._connectors):
             conn_bufs = self._block_to_connbuf[b_id]
             for x in conn_bufs:
                 self.backend.from_buf_async(getattr(x, buf).gpu, self._data_stream)
 
         self.backend.sync_stream(self._data_stream)
 
-        for b_id, connector in self._spec._connectors.iteritems():
+        for b_id, connector in six.iteritems(self._spec._connectors):
             conn_bufs = self._block_to_connbuf[b_id]
 
             if len(conn_bufs) > 1:
@@ -1085,7 +1090,7 @@ class SubdomainRunner(object):
         else:
             get_buf = operator.attrgetter('recv_buf')
 
-        for b_id, connector in self._spec._connectors.iteritems():
+        for b_id, connector in six.iteritems(self._spec._connectors):
             conn_bufs = self._recv_block_to_connbuf[b_id]
             if len(conn_bufs) > 1:
                 dest = np.hstack([np.ravel(get_buf(x)) for x in conn_bufs])
@@ -1328,7 +1333,7 @@ class SubdomainRunner(object):
         def _grid_dim1(x):
             return int(math.ceil(x / float(collect_block)))
 
-        for b_id, conn_bufs in self._block_to_connbuf.iteritems():
+        for b_id, conn_bufs in six.iteritems(self._block_to_connbuf):
             for cbuf in conn_bufs:
                 primary, secondary = self._init_collect_kernels(cbuf, _grid_dim1,
                                                                 collect_block)
@@ -1416,7 +1421,7 @@ class SubdomainRunner(object):
         sim_state = pickle.loads(str(cpoint['state']))
         self._sim.set_state(sim_state)
 
-        for k, v in cpoint.iteritems():
+        for k, v in six.iteritems(cpoint):
             if not k.startswith('dist'):
                 continue
 
@@ -1449,7 +1454,7 @@ class SubdomainRunner(object):
 
             idxs = np.array([], dtype=np.int32)
             idxs_opp = np.array([], dtype=np.int32)
-            for dist_num, locs in sorted(dists.iteritems()):
+            for dist_num, locs in sorted(six.iteritems(dists)):
                 opp_idx = self._subdomain.grid.idx_opposite[dist_num]
 
                 # XXX: fix this for indirect
@@ -1469,7 +1474,7 @@ class SubdomainRunner(object):
 
             components = np.zeros((self.dim, idxs.size), dtype=np.int32)
             h = 0
-            for dist_num, locs in sorted(dists.iteritems()):
+            for dist_num, locs in sorted(six.iteritems(dists)):
                 opp_idx = self._subdomain.grid.idx_opposite[dist_num]
                 ei = self._subdomain.grid.basis[opp_idx]
                 for i, ei_comp in enumerate(ei):
@@ -1772,7 +1777,7 @@ class IBMSubdomainRunner(SubdomainRunner):
 
         self._part_stiffness = self.float([p.stiffness for p in particles])
         self._gpu_part_stiffness = alloc(like=self._part_stiffness)
-        self._part_grid = [(self._sim.num_particles + 127) / 128, 1]
+        self._part_grid = [(self._sim.num_particles + 127) // 128, 1]
 
     @property
     def gpu_particle_position(self):
@@ -1841,7 +1846,7 @@ class NNSubdomainRunner(SubdomainRunner):
 
     @profile(TimeProfile.RECV_MACRO)
     def _recv_macro(self):
-        for b_id, connector in self._spec._connectors.iteritems():
+        for b_id, connector in six.iteritems(self._spec._connectors):
             conn_bufs = self._recv_block_to_macrobuf[b_id]
             if len(conn_bufs) > 1:
                 dest = np.hstack([np.ravel(x.recv_buf.host) for x in conn_bufs])
@@ -1866,14 +1871,14 @@ class NNSubdomainRunner(SubdomainRunner):
 
     @profile(TimeProfile.SEND_MACRO)
     def _send_macro(self):
-        for b_id, connector in self._spec._connectors.iteritems():
+        for b_id, connector in six.iteritems(self._spec._connectors):
             conn_bufs = self._block_to_macrobuf[b_id]
             for x in conn_bufs:
                 self.backend.from_buf_async(x.coll_buf.gpu, self._data_stream)
 
         self.backend.sync_stream(self._data_stream)
 
-        for b_id, connector in self._spec._connectors.iteritems():
+        for b_id, connector in six.iteritems(self._spec._connectors):
             conn_bufs = self._block_to_macrobuf[b_id]
             if len(conn_bufs) > 1:
                 connector.send(np.hstack(
@@ -1935,7 +1940,7 @@ class NNSubdomainRunner(SubdomainRunner):
         # separate dictionary where the order of the connection buffers
         # corresponds to that used by the _other_ subdomain.
         self._recv_block_to_macrobuf = defaultdict(list)
-        for subdomain_id, cbufs in self._block_to_macrobuf.iteritems():
+        for subdomain_id, cbufs in six.iteritems(self._block_to_macrobuf):
             cbufs.sort(key=lambda x:(x.face))
             recv_bufs = list(cbufs)
             recv_bufs.sort(key=lambda x: self._spec.opposite_face(x.face))
@@ -2032,7 +2037,7 @@ class NNSubdomainRunner(SubdomainRunner):
         self._macro_collect_kernels = []
         self._macro_distrib_kernels = []
 
-        for b_id, conn_bufs in self._block_to_macrobuf.iteritems():
+        for b_id, conn_bufs in six.iteritems(self._block_to_macrobuf):
             for cbuf in conn_bufs:
                 self._macro_collect_kernels.append(
                         self._init_macro_collect_kernels(cbuf, _grid_dim1,

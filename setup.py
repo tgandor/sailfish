@@ -33,6 +33,7 @@ def do_setup():
               'Mako >= 0.9.0',
               'sympy >= 0.7.3',
               'blosc >= 1.1',
+              'six >= 1.10',
           ],
           extras_require = {
               'doc': ['Sphinx >= 1.1', 'matplotlib >= 1.3.1'],

@@ -4,10 +4,13 @@ __author__ = 'Michal Januszewski'
 __email__ = 'sailfish-cfd@googlegroups.com'
 __license__ = 'LGPL3'
 
-import ConfigParser
 import argparse
 import os
 import re
+try:
+    import ConfigParser
+except ImportError:
+    import configparser as ConfigParser
 
 
 class LBConfig(argparse.Namespace):
@@ -47,7 +50,7 @@ class LBConfigParser(object):
         return self._parser.add_argument_group(name)
 
     def set_defaults(self, defaults):
-        for option in defaults.iterkeys():
+        for option in defaults.keys():
             assert self._parser.get_default(option) is not None,\
                     'Unknown option "{0}" specified in update_defaults()'.format(option)
         return self._parser.set_defaults(**defaults)

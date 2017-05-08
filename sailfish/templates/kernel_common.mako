@@ -1,6 +1,7 @@
 <%!
   from sailfish import sym
   import sailfish.node_type as nt
+  import six
 %>
 
 <%page args="bgk_args_decl"/>
@@ -510,7 +511,7 @@
 #include <stdio.h>
 %endif
 
-%for name, val in constants.iteritems():
+%for name, val in six.iteritems(constants):
   ${const_var} float ${name} = ${val}f;
 %endfor
 
