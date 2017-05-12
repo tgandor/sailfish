@@ -9,6 +9,7 @@ import numpy as np
 from sailfish import util
 import sailfish.node_type as nt
 import six
+from six.moves import range
 
 
 def bit_len(num):
@@ -203,7 +204,7 @@ class GeoEncoderConst(GeoEncoder):
             num_nodes = idx.shape[0]
             type_to_node_count[node_type.id] = num_nodes
 
-            for i in xrange(num_nodes):
+            for i in range(num_nodes):
                self._scratch_map[_selector(idx[i,:])] = i
 
             self._scratch_space_base[node_type.id] = self.scratch_space_size

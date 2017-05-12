@@ -11,6 +11,7 @@ import pycuda.tools
 import pycuda.driver as cuda
 import pycuda.gpuarray as cudaarray
 import pycuda.reduction as reduction
+from functools import reduce
 
 
 def _expand_block(block):

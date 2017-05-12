@@ -7,13 +7,12 @@ __email__ = 'sailfish-cfd@googlegroups.com'
 __license__ = 'LGPL3'
 
 import copy
+import functools
 import math
 import sympy
-from functools import reduce
 from sympy import Matrix, Rational, Symbol, Eq
 
 from sailfish import sym_codegen
-
 
 #
 # Classes for different grid types.
@@ -21,7 +20,6 @@ from sailfish import sym_codegen
 # These classes are not supposed to be instantiated -- they serve as containers for
 # information about the grid.
 #
-
 
 class DxQy(object):
     mx = Symbol('mx')
@@ -60,7 +58,6 @@ class DxQy(object):
         """Convert a direction number into the corresponding n-vector."""
         return cls.basis[cls.dir2vecidx[dir]]
 
-
 class D2Q9(DxQy):
     dim = 2
     Q = 9
@@ -69,12 +66,13 @@ class D2Q9(DxQy):
     gravity = Symbol('gravity')
 
     # Discretized velocities.
-    basis = list(map(lambda x: Matrix((x,)),
-                [(0,0), (1,0), (0, 1), (-1, 0), (0, -1), (1, 1), (-1, 1), (-1, -1), (1, -1)]))
+    basis = [Matrix((x,)) for x in
+                [(0,0), (1,0), (0, 1), (-1, 0), (0, -1), (1, 1), (-1, 1),
+                 (-1, -1), (1, -1)]]
 
     # BGK weights.
-    weights = list(map(lambda x: Rational(*x),
-            [(4,9), (1,9), (1,9), (1,9), (1,9), (1,36), (1,36), (1,36), (1,36)]))
+    weights = [Rational(*x) for x in
+            [(4,9), (1,9), (1,9), (1,9), (1,9), (1,36), (1,36), (1,36), (1,36)]]
 
     # Names of the moments.
     mrt_names = ['rho', 'en', 'ens', 'mx', 'ex', 'my', 'ey', 'pxx', 'pxy']
@@ -86,7 +84,7 @@ class D2Q9(DxQy):
 
     @classmethod
     def _init_mrt_basis(cls):
-        cls.mrt_basis = list(map(lambda x: Matrix(x), [[1]*9,
+        cls.mrt_basis = [Matrix(x) for x in [[1]*9,
                 [x.dot(x) for x in cls.basis],
                 [(x.dot(x))**2 for x in cls.basis],
                 [x[0] for x in cls.basis],
@@ -94,7 +92,7 @@ class D2Q9(DxQy):
                 [x[1] for x in cls.basis],
                 [x[1] * x.dot(x) for x in cls.basis],
                 [x[0]*x[0] - x[1]*x[1] for x in cls.basis],
-                [x[0]*x[1] for x in cls.basis]]))
+                [x[0]*x[1] for x in cls.basis]]]
 
     @classmethod
     def _init_mrt_equilibrium(cls):
@@ -154,13 +152,13 @@ class D3Q13(DxQy):
     dim = 3
     Q = 13
 
-    basis = list(map(lambda x: Matrix((x, )),
+    basis = [Matrix((x, )) for x in
                 [(0,0,0), (1,1,0), (1,-1,0), (1,0,1), (1,0,-1), (0,1,1), (0,1,-1),
-                 (-1,-1,0), (-1,1,0), (-1,0,-1), (-1,0,1), (0,-1,-1), (0,-1,1)]))
+                 (-1,-1,0), (-1,1,0), (-1,0,-1), (-1,0,1), (0,-1,-1), (0,-1,1)]]
 
-    weights = list(map(lambda x: Rational(*x),
+    weights = [Rational(*x) for x in
             [(1,2), (1,24), (1,24), (1,24), (1,24), (1,24), (1,24),
-             (1,24), (1,24), (1,24), (1,24), (1,24), (1,24)]))
+             (1,24), (1,24), (1,24), (1,24), (1,24), (1,24)]]
 
     mrt_names = ['rho', 'en', 'mx', 'my', 'mz',
                  'pww', 'pxx', 'pxy', 'pyz', 'pzx', 'm3x', 'm3y', 'm3z']
@@ -171,7 +169,7 @@ class D3Q13(DxQy):
 
     @classmethod
     def _init_mrt_basis(cls):
-        cls.mrt_basis = list(map(lambda x: Matrix(x), [
+        cls.mrt_basis = [Matrix(x) for x in [
             [1]*13,
             [13*x.dot(x)/2 - 12 for x in cls.basis],
             [x[0] for x in cls.basis],
@@ -184,7 +182,7 @@ class D3Q13(DxQy):
             [x[0]*x[2] for x in cls.basis],
             [(x[1]*x[1] - x[2]*x[2])*x[0] for x in cls.basis],
             [(x[2]*x[2] - x[0]*x[0])*x[1] for x in cls.basis],
-            [(x[0]*x[0] - x[1]*x[1])*x[2] for x in cls.basis]]))
+            [(x[0]*x[0] - x[1]*x[1])*x[2] for x in cls.basis]]]
 
     @classmethod
     def _init_mrt_equilibrium(cls):
@@ -231,14 +229,14 @@ class D3Q15(DxQy):
     dim = 3
     Q = 15
 
-    basis = list(map(lambda x: Matrix((x, )),
+    basis = [Matrix((x, )) for x in
                 [(0,0,0), (1,0,0), (-1,0,0), (0,1,0), (0,-1,0), (0,0,1), (0,0,-1),
                  (1,1,1), (-1,1,1), (1,-1,1), (-1,-1,1),
-                 (1,1,-1), (-1,1,-1), (1,-1,-1), (-1,-1,-1)]))
+                 (1,1,-1), (-1,1,-1), (1,-1,-1), (-1,-1,-1)]]
 
-    weights = list(map(lambda x: Rational(*x),
+    weights = [Rational(*x) for x in
             [(2,9), (1,9), (1,9), (1,9), (1,9), (1,9), (1,9),
-                (1,72), (1,72), (1,72), (1,72), (1,72), (1,72), (1,72), (1,72)]))
+                (1,72), (1,72), (1,72), (1,72), (1,72), (1,72), (1,72), (1,72)]]
 
     mrt_names = ['rho', 'en', 'ens', 'mx', 'ex', 'my', 'ey', 'mz', 'ez',
                  'pww', 'pxx', 'pxy', 'pyz', 'pzx', 'mxyz']
@@ -250,7 +248,7 @@ class D3Q15(DxQy):
 
     @classmethod
     def _init_mrt_basis(cls):
-        cls.mrt_basis = list(map(lambda x: Matrix(x), [
+        cls.mrt_basis = [Matrix(x) for x in [
             [1]*15,
             [x.dot(x) for x in cls.basis],
             [(x.dot(x))**2 for x in cls.basis],
@@ -265,7 +263,7 @@ class D3Q15(DxQy):
             [x[0]*x[1] for x in cls.basis],
             [x[1]*x[2] for x in cls.basis],
             [x[0]*x[2] for x in cls.basis],
-            [x[0]*x[1]*x[2] for x in cls.basis]]))
+            [x[0]*x[1]*x[2] for x in cls.basis]]]
 
     @classmethod
     def _init_mrt_equilibrium(cls):
@@ -315,18 +313,18 @@ class D3Q19(DxQy):
     dim = 3
     Q = 19
 
-    basis = list(map(lambda x: Matrix((x, )),
+    basis = [Matrix((x, )) for x in
                 [(0,0,0),
                 (1,0,0), (-1,0,0), (0,1,0), (0,-1,0), (0,0,1), (0,0,-1),
                 (1,1,0), (-1,1,0), (1,-1,0), (-1,-1,0),
                 (0,1,1), (0,-1,1), (0,1,-1), (0,-1,-1),
                 (1,0,1), (-1,0,1), (1,0,-1), (-1,0,-1),
-                ]))
+                ]]
 
-    weights = list(map(lambda x: Rational(*x),
+    weights = [Rational(*x) for x in
             [(1,3), (1,18), (1,18), (1,18), (1,18), (1,18), (1,18),
                 (1,36), (1,36), (1,36), (1,36), (1,36), (1,36),
-                (1,36), (1,36), (1,36), (1,36), (1,36), (1,36)]))
+                (1,36), (1,36), (1,36), (1,36), (1,36), (1,36)]]
 
     entropic_weights = weights
 
@@ -338,7 +336,7 @@ class D3Q19(DxQy):
 
     @classmethod
     def _init_mrt_basis(cls):
-        cls.mrt_basis = list(map(lambda x: Matrix(x), [
+        cls.mrt_basis = [Matrix(x) for x in [
             [1]*19,
             [x.dot(x) for x in cls.basis],
             [(x.dot(x))**2 for x in cls.basis],
@@ -357,7 +355,7 @@ class D3Q19(DxQy):
             [x[0]*x[2] for x in cls.basis],
             [(x[1]*x[1] - x[2]*x[2])*x[0] for x in cls.basis],
             [(x[2]*x[2] - x[0]*x[0])*x[1] for x in cls.basis],
-            [(x[0]*x[0] - x[1]*x[1])*x[2] for x in cls.basis]]))
+            [(x[0]*x[0] - x[1]*x[1])*x[2] for x in cls.basis]]]
 
     @classmethod
     def _init_mrt_equilibrium(cls):
@@ -412,22 +410,22 @@ class D3Q27(DxQy):
     dim = 3
     Q = 27
 
-    basis = list(map(lambda x: Matrix((x, )),
+    basis = [Matrix((x, )) for x in
                 [(0,0,0),
                  (1,0,0), (-1,0,0), (0,1,0), (0,-1,0), (0,0,1), (0,0,-1),
                  (1,1,0), (-1,1,0), (1,-1,0), (-1,-1,0),
                  (0,1,1), (0,-1,1), (0,1,-1), (0,-1,-1),
                  (1,0,1), (-1,0,1), (1,0,-1), (-1,0,-1),
                  (1,1,1), (1,1,-1), (1,-1,1), (1,-1,-1),
-                 (-1,1,1), (-1,1,-1), (-1,-1,1), (-1,-1,-1)]))
+                 (-1,1,1), (-1,1,-1), (-1,-1,1), (-1,-1,-1)]]
 
-    weights = list(map(lambda x: Rational(*x),
+    weights = [Rational(*x) for x in
                   [(8, 27),
                    (2, 27), (2, 27), (2, 27), (2, 27), (2, 27), (2, 27),
                    (1, 54), (1, 54), (1, 54), (1, 54), (1, 54), (1, 54),
                    (1, 54), (1, 54), (1, 54), (1, 54), (1, 54), (1, 54),
                    (1, 216), (1, 216), (1, 216), (1, 216),
-                   (1, 216), (1, 216), (1, 216), (1, 216)]))
+                   (1, 216), (1, 216), (1, 216), (1, 216)]]
 
 
 def alpha_series():
@@ -529,7 +527,8 @@ def get_missing_dists(grid, orientation):
     return unknown
 
 
-def ex_rho(grid, distp, incompressible, missing_dir=None):
+def ex_rho(grid, distp, incompressible, missing_dir=None,
+           minimize_roundoff=False):
     """Express density as a function of the distributions.
 
     :param distp: name of the pointer to the distribution structure
@@ -539,6 +538,8 @@ def ex_rho(grid, distp, incompressible, missing_dir=None):
         a node where not all distributions are known is necessary. This
         parameter identifies the normal vector pointing towards the
         fluid (i.e. the distributions in this direction are unknown).
+    :param minimize_roundoff: whether the round-off minimization model is to be
+        used
 
     :rtype: sympy expression for the density
     """
@@ -553,8 +554,32 @@ def ex_rho(grid, distp, incompressible, missing_dir=None):
     # This is derived by considering a system of equations for the macroscopic
     # quantities and cancelling out the unknown distributions so as to get an
     # expression for rho using only known quantities.
+    #
+    # If 'n' indicates distributions that have a non-zero component along the
+    # normal direction of the plane on which the boundary condition is applied,
+    # and 'o' indicates distributions orthogonal to that direction, this can be
+    # expressed as:
+    #
+    #        rho = f_n+ + f_n- + f_o        (1)
+    #  v_n * rho = f_n+ - f_n-              (2)
+    #
+    # (assuming n points towards positive values in the normal direction)
+    #
+    # In this setup, f_n+ are unknown. We can cancel them out by computing rho
+    # from (1) - (2):
+    #   (1 - v_n) rho = 2 f_n- + f_0
+    #
+    # The factor 2 is not included explicitly below, since this is taken care
+    # of at a lower level, where the unknown distributions (f_n+) are replaced
+    # with the known ones (f_n-) according to the bounce back rule.
+    #
+    # The derivation for the incompressible model follows a similar line of
+    # reasoning.
     if incompressible:
         return S.rho + S.rho0 * grid.dir_to_vec(missing_dir).dot(grid.v)
+    elif minimize_roundoff:
+        return ((S.rho + grid.dir_to_vec(missing_dir).dot(grid.v)) /
+            (1 - grid.dir_to_vec(missing_dir).dot(grid.v)))
     else:
         return S.rho / (1 - grid.dir_to_vec(missing_dir).dot(grid.v))
 
@@ -626,7 +651,7 @@ def ex_flux(grid, distp, comp_a, comp_b, config):
 
     return ret
 
-# rho / 3 * \delta_{ab} + rho u_a u_b
+# rho c_s^2 \delta_{ab} + rho u_a u_b
 def ex_eq_flux(grid, comp_a, comp_b):
     if comp_a != comp_b:
         return S.rho * grid.v[comp_a] * grid.v[comp_b]
@@ -845,7 +870,7 @@ def _gcd(a,b):
     return a
 
 def gcd(*terms):
-    return reduce(lambda a, b: _gcd(a, b), terms)
+    return functools.reduce(lambda a,b: _gcd(a,b), terms)
 
 def orthogonalize(*vectors):
     """Ortogonalize a set of vectors.

@@ -1,7 +1,7 @@
 from operator import itemgetter
 import operator
 import re
-import six
+from functools import reduce
 try:
     from sympy.core import singleton
     NegativeOne = singleton.S.NegativeOne
@@ -115,7 +115,7 @@ def poly_factorize(poly):
     ret_poly = 0
     monoms = list(poly.monoms)
 
-    for isym, maxdeg in sorted(max_deg.items(), key=itemgetter(1), reverse=True):
+    for isym, maxdeg in sorted(list(max_deg.items()), key=itemgetter(1), reverse=True):
         drop_idx = []
         new_poly = []
 
@@ -243,7 +243,7 @@ def cexpr(sim, incompressible, pointers, ex, rho, aliases=True, vectors=True,
         t = t.subs(S.rho0, rho)
 
     if aliases:
-        for src, dst in six.iteritems(S.aliases):
+        for src, dst in S.aliases.items():
             t = t.subs(src, dst)
 
     t = KernelCodePrinter().doprint(t)

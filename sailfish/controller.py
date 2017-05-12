@@ -313,7 +313,7 @@ class LBSimulationController(object):
             type=str, default='')
         group.add_argument('--output_format',
             help='output format', type=str,
-            choices=io.format_name_to_cls.keys(), default='npy')
+            choices=list(io.format_name_to_cls.keys()), default='npy')
         group.add_argument('--nooutput_compress', dest='output_compress',
                            action='store_false', default=True,
                            help='stores the output in compressed files'
@@ -522,7 +522,7 @@ class LBSimulationController(object):
             # config file.
             node_config = copy.copy(self.config)
             node_config.gpus = cluster.nodes[i].gpus
-            for k, v in node.settings.iteritems():
+            for k, v in node.settings.items():
                 setattr(node_config, k, v)
 
             self._cluster_channels.append(
@@ -753,8 +753,11 @@ class LBSimulationController(object):
 
     def save_subdomain_config(self, subdomains):
         if self.config.output:
-            pickle.dump(subdomains,
-                    open(io.subdomains_filename(self.config.output), 'w'))
+            dname = os.path.dirname(self.config.output)
+            if dname and not os.path.exists(dname):
+                os.makedirs(dname)
+            with open(io.subdomains_filename(self.config.output), 'wb') as f:
+                pickle.dump(subdomains, f)
 
     def set_default_filenames(self):
         if not self.config.base_name:

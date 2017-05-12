@@ -387,7 +387,7 @@ class Subdomain(object):
         self._seen_types = set([0])
         self._needs_orientation = False
 
-        # A dense boolean array indicaing which nodes are active in the
+        # A dense boolean array indicating which nodes are active in the
         # simulation (marked as True). This is only used in the indirect
         # addressing node. This array covers all nodes, including ghosts.
         self.active_node_mask = None
@@ -518,7 +518,7 @@ class Subdomain(object):
                         "in the 'where' array.  Use node_util.multifield() to "
                         "generate the array in an easy way.")
             elif isinstance(param, nt.DynamicValue):
-                if param.has_symbols(sym.S.time) or zip(param.get_timeseries()):
+                if param.has_symbols(sym.S.time) or list(zip(param.get_timeseries())):
                     self.config.time_dependence = True
                 if param.has_symbols(sym.S.gx, sym.S.gy, sym.S.gz):
                     self.config.space_dependence = True

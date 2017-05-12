@@ -6,6 +6,7 @@ __license__ = 'LGPL3'
 
 # Make sure the pyopencl module exists, but do not import it.
 import imp
+from functools import reduce
 imp.find_module('pyopencl')
 import operator
 import os
@@ -178,7 +179,8 @@ class OpenCLBackend(object):
     def run_kernel(self, kernel, grid_size, stream=None):
         global_size = []
         for i, dim in enumerate(grid_size):
-            global_size.append(int(dim * kernel.block[i]))
+            global_size.append(dim * kernel.block[i])
+
         cl.enqueue_nd_range_kernel(self.default_queue, kernel, global_size, kernel.block[0:len(global_size)])
 
     def get_reduction_kernel(self, reduce_expr, map_expr, neutral, *args):

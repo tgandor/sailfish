@@ -91,8 +91,8 @@ class FluidSurfaceVis(vis.FluidVis):
         self.sim = sim
 
         m = min(lat_nx, lat_ny)
-        mx = lat_nx / m
-        my = lat_ny / m
+        mx = lat_nx // m
+        my = lat_ny // m
 
         self.mesh_x, self.mesh_y = numpy.mgrid[
                 -my:my:complex(0, lat_ny),
@@ -112,7 +112,7 @@ class FluidSurfaceVis(vis.FluidVis):
         self._paused = False
         self._reset()
 
-        self._colormap = _colormaps.keys()[0]
+        self._colormap = list(_colormaps.keys())[0]
         self._minh = -0.1
         self._maxh = 0.1
 
@@ -284,9 +284,9 @@ class FluidSurfaceVis(vis.FluidVis):
                     else:
                         self._angle_z += 1.0
                 elif event.key == pygame.K_c:
-                    idx = _colormaps.keys().index(self._colormap) + 1
-                    idx %= len(_colormaps.keys())
-                    self._colormap = _colormaps.keys()[idx]
+                    idx = list(_colormaps.keys()).index(self._colormap) + 1
+                    idx %= len(list(_colormaps.keys()))
+                    self._colormap = list(_colormaps.keys())[idx]
 
     def main(self):
         t_prev = time.time()

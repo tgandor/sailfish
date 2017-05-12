@@ -20,10 +20,8 @@ from sailfish.profile import profile, TimeProfile
 from sailfish.subdomain_connection import ConnectionBuffer, MacroConnectionBuffer
 import sailfish.node_type as nt
 import six
-try:
-    import cPickle as pickle
-except ImportError:
-    import _pickle as pickle
+from six.moves import range
+from six.moves import cPickle as pickle
 
 # Used to hold a reference to a CUDA kernel and a grid on which it is
 # to be executed.
@@ -439,19 +437,19 @@ class SubdomainRunner(object):
         # (i.e. bs > bns).
         if spec.dim == 2:
             self._boundary_blocks = (
-                    (bns * grid_nx / bs) * y_conns +      # top & bottom
+                    (bns * grid_nx // bs) * y_conns +      # top & bottom
                     (arr_ny - y_conns * bns) * x_conns)  # left & right (w/o top & bottom rows)
             self._kernel_grid_bulk = [grid_nx - x_conns * bs, arr_ny - y_conns * bns]
-            self._kernel_grid_full = [grid_nx / bs, arr_ny]
+            self._kernel_grid_full = [grid_nx // bs, arr_ny]
         else:
             self._boundary_blocks = (
-                    grid_nx * arr_ny * bns / bs * z_conns +                    # T/B faces
-                    grid_nx * (arr_nz - z_conns * bns) / bs * bns * y_conns +  # N/S faces
+                    grid_nx * arr_ny * bns // bs * z_conns +                    # T/B faces
+                    grid_nx * (arr_nz - z_conns * bns) // bs * bns * y_conns +  # N/S faces
                     (arr_ny - y_conns * bns) * (arr_nz - z_conns * bns) * x_conns)
             self._kernel_grid_bulk = [
                     (grid_nx - x_conns * bs) * (arr_ny - y_conns * bns),
                     arr_nz - z_conns * bns]
-            self._kernel_grid_full = [grid_nx * arr_ny / bs, arr_nz]
+            self._kernel_grid_full = [grid_nx * arr_ny // bs, arr_nz]
 
         if self._boundary_blocks >= 65536:
             # Use an artificial 2D grid to work around device limits.
@@ -459,7 +457,7 @@ class SubdomainRunner(object):
         else:
             self._boundary_blocks = (self._boundary_blocks, 1)
 
-        self._kernel_grid_bulk[0] /= bs
+        self._kernel_grid_bulk[0] //= bs
 
         # Special cases: boundary kernels can cover the whole domain or this is
         # the only block participating in the simulation.
@@ -517,13 +515,13 @@ class SubdomainRunner(object):
 
         self.config.logger.info('Required memory: ')
         self.config.logger.info('. distributions: %d MiB' %
-                                (total_dist_bytes / 1024 / 1024))
+                                (total_dist_bytes // 1024 // 1024))
 
         scalar, vector = self._sim.count_fields(self)
         total_field_bytes = (self.num_active_nodes *
                              (scalar + self.dim * vector) * self.float().nbytes)
         self.config.logger.info('. fields: %d MiB' %
-                                (total_field_bytes / 1024 / 1024))
+                                (total_field_bytes // 1024 // 1024))
 
     def _get_strides(self, type_):
         """Returns a list of strides for the NumPy array storing the lattice."""
@@ -1359,7 +1357,7 @@ class SubdomainRunner(object):
 
         self.config.logger.debug('getting dist for grid {0} iter={1} ({2})'.format(
             grid_num, iter_idx, self.gpu_dist(grid_num, iter_idx)))
-        dbuf = np.zeros(self._get_dist_bytes(self._sim.grid) / self.float().nbytes,
+        dbuf = np.zeros(self._get_dist_bytes(self._sim.grid) // self.float().nbytes,
             dtype=self.float)
         self.backend.from_buf(self.gpu_dist(grid_num, iter_idx), dbuf)
         if self.config.node_addressing == 'indirect':
@@ -1376,11 +1374,11 @@ class SubdomainRunner(object):
         self.backend.to_buf(self.gpu_dist(grid_num, iter_idx), dbuf)
 
     def _debug_global_idx_to_tuple(self, gi):
-        dist_num = gi / self.num_phys_nodes
+        dist_num = gi // self.num_phys_nodes
         rest = gi % self.num_phys_nodes
         arr_nx = self._physical_size[-1]
         gx = rest % arr_nx
-        gy = rest / arr_nx
+        gy = rest // arr_nx
         return dist_num, gy, gx
 
     def send_summary_info(self, timing_info, min_timings, max_timings):
@@ -1415,11 +1413,13 @@ class SubdomainRunner(object):
         np.savez(fname, **data)
 
     def restore_checkpoint(self, fname):
-        self.config.logger.info('Restoring checkpoint')
+        self.config.logger.info('Restoring checkpoint from {0}'.format(fname))
 
         cpoint = np.load(fname)
         sim_state = pickle.loads(str(cpoint['state']))
         self._sim.set_state(sim_state)
+        if not self.config.restore_time:
+            self._sim.iteration = 0
 
         for k, v in six.iteritems(cpoint):
             if not k.startswith('dist'):
@@ -1505,7 +1505,7 @@ class SubdomainRunner(object):
                               fo.gpu_force_buf, fo.force_buf.size],
                              'PPPPi',
                              block_size=128,
-                             grid=[(fo.force_buf.size + 127) / 128])
+                             grid=[(fo.force_buf.size + 127) // 128])
 
     def sighup_handler(self, signum, frame):
         self.config.logger.info('Received HUP signal, will save checkpoint (it=%d).' % self._sim.iteration)
@@ -1599,7 +1599,7 @@ class SubdomainRunner(object):
         visc = self.config.visc
         self.config.visc = 1.0/6.0
         try:
-            for init_it in xrange(0, self.config.init_iters):
+            for init_it in range(0, self.config.init_iters):
                 self.step(False)
                 self._data_stream.synchronize()
                 self._calc_stream.synchronize()
